@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "784983898683",
+    "project_id": "alu-startup-connect-e9b69",
+    "storage_bucket": "alu-startup-connect-e9b69.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:784983898683:android:1e413f4f5b267b135c7a1e",
+        "android_client_info": {
+          "package_name": "com.alu.alu_startup_connect"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "784983898683-vojujdqigr9qp1p0hllh1sd8ppuqs9qf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQCkPDZB7c-VkB1ByfcnO9i0PtpAZqBaE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "784983898683-vojujdqigr9qp1p0hllh1sd8ppuqs9qf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
