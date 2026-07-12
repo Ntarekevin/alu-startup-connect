@@ -95,29 +95,29 @@ class _NavItem extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: isActive ? activeColor.withOpacity(0.12) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   isActive ? activeIcon : icon,
-                  size: 24,
+                  size: 22,
                   color: isActive ? activeColor : inactiveColor,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                   color: isActive ? activeColor : inactiveColor,
                 ),
