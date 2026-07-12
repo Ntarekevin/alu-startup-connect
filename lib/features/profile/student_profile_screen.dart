@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -5,8 +8,72 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 
-class StudentProfileScreen extends StatelessWidget {
+class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key});
+
+  @override
+  State<StudentProfileScreen> createState() => _StudentProfileScreenState();
+}
+
+class _StudentProfileScreenState extends State<StudentProfileScreen> {
+  bool _isUploading = false;
+  bool _isPickingFile = false;
+
+  Future<void> _pickAndUploadAvatar(String uid) async {
+    if (_isPickingFile || _isUploading) return;
+    setState(() => _isPickingFile = true);
+    
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.image,
+      );
+      
+      if (result != null && result.files.isNotEmpty) {
+        final path = result.files.single.path;
+        final name = result.files.single.name;
+        if (path != null) {
+          setState(() {
+            _isUploading = true;
+            _isPickingFile = false;
+          });
+
+          // Upload to Firebase Storage
+          final file = File(path);
+          final ref = FirebaseStorage.instance
+              .ref()
+              .child('avatars/${uid}_${DateTime.now().millisecondsSinceEpoch}_$name');
+          
+          await ref.putFile(file);
+          final downloadUrl = await ref.getDownloadURL();
+
+          // Update Firestore
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .update({'avatarUrl': downloadUrl});
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profile picture updated successfully! 🎉')),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading picture: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+          _isPickingFile = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +99,7 @@ class StudentProfileScreen extends StatelessWidget {
           final skills = List<String>.from(data?['skills'] ?? []);
           final linkedinUrl = data?['linkedinUrl'] as String?;
           final portfolioUrl = data?['portfolioUrl'] as String?;
+          final avatarUrl = data?['avatarUrl'] as String?;
 
           return CustomScrollView(
             slivers: [
@@ -85,29 +153,75 @@ class StudentProfileScreen extends StatelessWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                border: Border.all(color: AppColors.primary, width: 3),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.4),
-                                    blurRadius: 20,
+                            GestureDetector(
+                              onTap: _isUploading || uid == null ? null : () => _pickAndUploadAvatar(uid),
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                      border: Border.all(color: AppColors.primary, width: 3),
+                                      image: avatarUrl != null && avatarUrl.isNotEmpty
+                                          ? DecorationImage(
+                                              image: NetworkImage(avatarUrl),
+                                              fit: BoxFit.cover,
+                                            )
+                                          : null,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.primary.withOpacity(0.4),
+                                          blurRadius: 20,
+                                        ),
+                                      ],
+                                    ),
+                                    child: avatarUrl != null && avatarUrl.isNotEmpty
+                                        ? null
+                                        : Center(
+                                            child: Text(
+                                              name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                              style: const TextStyle(
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.primary,
+                                              ),
+                                            ),
+                                          ),
                                   ),
+                                  Positioned(
+                                    right: 0,
+                                    bottom: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(
+                                        color: AppColors.primary,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  if (_isUploading)
+                                    Positioned.fill(
+                                      child: Container(
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black45,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Center(
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                 ],
-                              ),
-                              child: Center(
-                                child: Text(
-                                  name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
                               ),
                             ),
                             const SizedBox(width: 14),
