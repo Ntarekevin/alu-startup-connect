@@ -11,15 +11,17 @@ class CompanyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 180,
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: isDark ? AppColors.darkSurface : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.cardBorder),
+          border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
         ),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -34,8 +36,8 @@ class CompanyCard extends StatelessWidget {
                     height: 42,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      color: AppColors.surfaceLight,
-                      border: Border.all(color: AppColors.cardBorder),
+                      color: Colors.white,
+                      border: Border.all(color: Colors.black12),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: Image.network(
@@ -45,7 +47,7 @@ class CompanyCard extends StatelessWidget {
                         child: Text(
                           company.name[0],
                           style: const TextStyle(
-                            color: AppColors.teal,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w700,
                             fontSize: 18,
                           ),
@@ -58,10 +60,10 @@ class CompanyCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
-                        color: AppColors.teal.withOpacity(0.15),
+                        color: AppColors.primary.withOpacity(0.15),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.verified, size: 14, color: AppColors.teal),
+                      child: const Icon(Icons.verified, size: 14, color: AppColors.primary),
                     ),
                 ],
               ),
@@ -76,19 +78,19 @@ class CompanyCard extends StatelessWidget {
               Text(
                 company.industry,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.teal,
+                      color: AppColors.primary,
                       fontSize: 11,
                     ),
               ),
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.location_on_outlined, size: 11, color: AppColors.textMuted),
+                  const Icon(Icons.location_on_outlined, size: 11, color: Colors.grey),
                   const SizedBox(width: 2),
                   Expanded(
                     child: Text(
                       company.location,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10, color: Colors.grey),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -99,16 +101,16 @@ class CompanyCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.gold.withOpacity(0.12),
+                  color: AppColors.secondary.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(5),
-                  border: Border.all(color: AppColors.gold.withOpacity(0.25)),
+                  border: Border.all(color: AppColors.secondary.withOpacity(0.25)),
                 ),
                 child: Text(
                   company.stage,
                   style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.gold,
+                    color: AppColors.secondary,
                   ),
                 ),
               ),

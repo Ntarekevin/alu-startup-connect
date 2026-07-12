@@ -55,14 +55,18 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final primaryColor = AppColors.primary;
+    
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.center,
             radius: 1.2,
-            colors: [Color(0xFF141937), AppColors.background],
+            colors: [isDark ? const Color(0xFF141937) : Colors.white, bgColor],
           ),
         ),
         child: Center(
@@ -75,14 +79,14 @@ class _SplashScreenState extends State<SplashScreen> {
                 height: 90,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
-                  gradient: const LinearGradient(
-                    colors: [AppColors.teal, Color(0xFF00A896)],
+                  gradient: LinearGradient(
+                    colors: [primaryColor, const Color(0xFF8E7DF9)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.teal.withOpacity(0.5),
+                      color: primaryColor.withOpacity(0.5),
                       blurRadius: 40,
                       spreadRadius: 5,
                     ),
@@ -94,7 +98,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.background,
+                      color: Colors.white,
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -109,7 +113,7 @@ class _SplashScreenState extends State<SplashScreen> {
               Text(
                 'Startup Connect',
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: isDark ? Colors.white : Colors.black87,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
                     ),
@@ -122,7 +126,7 @@ class _SplashScreenState extends State<SplashScreen> {
               Text(
                 'Your career, launched.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.teal,
+                      color: primaryColor,
                       fontWeight: FontWeight.w500,
                     ),
               )
@@ -136,7 +140,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    AppColors.teal.withOpacity(0.6),
+                    primaryColor.withOpacity(0.6),
                   ),
                 ),
               )

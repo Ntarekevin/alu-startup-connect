@@ -33,8 +33,8 @@ class _MainShellState extends State<MainShell> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            backgroundColor: AppColors.background,
-            body: Center(child: CircularProgressIndicator(color: AppColors.teal)),
+            backgroundColor: AppColors.darkBackground,
+            body: Center(child: CircularProgressIndicator(color: AppColors.secondary)),
           );
         }
 
@@ -64,14 +64,13 @@ class _StudentShellState extends State<_StudentShell> {
     HomeScreen(),
     ExploreScreen(),
     ApplicationsScreen(),
-    MessagesScreen(),
     StudentProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.darkBackground,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
@@ -103,7 +102,7 @@ class _StartupShellState extends State<_StartupShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.darkBackground,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
@@ -132,8 +131,8 @@ class _StartupNavBar extends StatelessWidget {
 
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.cardBorder)),
+        color: AppColors.darkSurface,
+        border: Border(top: BorderSide(color: AppColors.darkBorder)),
       ),
       child: SafeArea(
         child: SizedBox(
@@ -152,14 +151,14 @@ class _StartupNavBar extends StatelessWidget {
                     children: [
                       Icon(
                         isSelected ? item['activeIcon'] as IconData : item['icon'] as IconData,
-                        color: isSelected ? AppColors.teal : AppColors.textMuted,
+                        color: isSelected ? AppColors.primary : AppColors.darkTextSecondary,
                         size: 22,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         item['label'] as String,
                         style: TextStyle(
-                          color: isSelected ? AppColors.teal : AppColors.textMuted,
+                          color: isSelected ? AppColors.primary : AppColors.darkTextSecondary,
                           fontSize: 10,
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                         ),

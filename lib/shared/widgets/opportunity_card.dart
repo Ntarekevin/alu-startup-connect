@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import '../../core/models/models.dart';
 import '../../core/theme/app_theme.dart';
+import 'tag_chip.dart';
 
 class OpportunityCard extends StatelessWidget {
   final OpportunityModel opportunity;
@@ -21,15 +22,15 @@ class OpportunityCard extends StatelessWidget {
   Color _typeColor(String type) {
     switch (type) {
       case 'Internship':
-        return AppColors.teal;
+        return const Color(0xFF6C5CE7);
       case 'Full-time':
-        return AppColors.gold;
+        return const Color(0xFF22D3A5);
       case 'Part-time':
-        return AppColors.info;
+        return const Color(0xFFFFB627);
       case 'Contract':
-        return AppColors.statusInterview;
+        return const Color(0xFFFF4B63);
       default:
-        return AppColors.textMuted;
+        return Colors.grey;
     }
   }
 
@@ -37,185 +38,164 @@ class OpportunityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final daysLeft = opportunity.deadline.difference(DateTime.now()).inDays;
     final typeColor = _typeColor(opportunity.type);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: opportunity.isFeatured
-                ? AppColors.teal.withOpacity(0.4)
-                : AppColors.cardBorder,
+                ? AppColors.primary.withOpacity(0.5)
+                : (isDark ? Colors.white12 : Colors.black12),
           ),
-          boxShadow: opportunity.isFeatured
-              ? [
-                  BoxShadow(
-                    color: AppColors.teal.withOpacity(0.08),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  )
-                ]
-              : null,
+          boxShadow: [
+            BoxShadow(
+              color: opportunity.isFeatured 
+                  ? AppColors.primary.withOpacity(0.15) 
+                  : Colors.black.withOpacity(0.02),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            )
+          ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header row
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Company logo
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: AppColors.surfaceLight,
-                      border: Border.all(color: AppColors.cardBorder),
+                      borderRadius: BorderRadius.circular(14),
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        )
+                      ],
                     ),
                     clipBehavior: Clip.antiAlias,
-                    child: Image.network(
-                      opportunity.companyLogo,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Center(
-                        child: Text(
-                          opportunity.companyName[0],
-                          style: const TextStyle(
-                            color: AppColors.teal,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18,
+                    child: opportunity.companyLogo.isNotEmpty
+                        ? Image.network(
+                            opportunity.companyLogo,
+                            fit: BoxFit.cover,
+                          )
+                        : Center(
+                            child: Text(
+                              opportunity.companyName[0],
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 20,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          opportunity.companyName,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.textMuted,
-                              ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
                           opportunity.title,
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          opportunity.companyName,
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   // Save button
-                  GestureDetector(
-                    onTap: onSave,
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: opportunity.isSaved
-                            ? AppColors.teal.withOpacity(0.15)
-                            : AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: opportunity.isSaved ? AppColors.teal : AppColors.cardBorder,
+                  if (onSave != null)
+                    GestureDetector(
+                      onTap: onSave,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: opportunity.isSaved
+                              ? AppColors.primary.withOpacity(0.1)
+                              : Colors.transparent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          opportunity.isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                          size: 20,
+                          color: opportunity.isSaved ? AppColors.primary : Colors.grey,
                         ),
                       ),
-                      child: Icon(
-                        opportunity.isSaved ? Icons.bookmark : Icons.bookmark_border,
-                        size: 18,
-                        color: opportunity.isSaved ? AppColors.teal : AppColors.textMuted,
-                      ),
                     ),
-                  ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
               // Tags row
               Wrap(
-                spacing: 6,
-                runSpacing: 6,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  _Tag(label: opportunity.type, color: typeColor),
-                  _Tag(
-                    label: opportunity.isRemote ? '🌍 Remote' : '📍 ${opportunity.location}',
-                    color: AppColors.textMuted,
+                  TagChip(label: opportunity.type, color: typeColor),
+                  TagChip(
+                    label: opportunity.isRemote ? 'Remote' : opportunity.location,
+                    color: AppColors.secondary,
                   ),
-                  _Tag(label: '⏱ ${opportunity.duration}', color: AppColors.textMuted),
-                  if (opportunity.stipend != null)
-                    _Tag(label: '💰 ${opportunity.stipend}', color: AppColors.gold),
                 ],
               ),
 
-              if (!compact) ...[
-                const SizedBox(height: 12),
-                // Skills
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: opportunity.skills.take(3).map((s) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: Text(
-                        s,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: AppColors.textSecondary),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-
+              const SizedBox(height: 16),
+              Divider(color: isDark ? Colors.white12 : Colors.black12),
               const SizedBox(height: 12),
-              const Divider(color: AppColors.cardBorder, height: 1),
-              const SizedBox(height: 10),
 
               // Footer
               Row(
                 children: [
-                  Icon(Icons.people_outline, size: 14, color: AppColors.textMuted),
-                  const SizedBox(width: 4),
+                  Icon(Icons.people_outline_rounded, size: 16, color: Colors.grey),
+                  const SizedBox(width: 6),
                   Text(
-                    '${opportunity.applicantCount} applicants',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    '${opportunity.applicantCount} applied',
+                    style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87),
                   ),
                   const Spacer(),
                   Icon(
-                    Icons.schedule,
-                    size: 14,
-                    color: daysLeft <= 7 ? AppColors.error : AppColors.textMuted,
+                    Icons.schedule_rounded,
+                    size: 16,
+                    color: daysLeft <= 7 ? AppColors.error : Colors.grey,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 6),
                   Text(
                     daysLeft <= 0
                         ? 'Closed'
                         : daysLeft == 1
                             ? '1 day left'
                             : '$daysLeft days left',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: daysLeft <= 7 ? AppColors.error : AppColors.textMuted,
-                        ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    DateFormat('MMM d').format(opportunity.postedAt),
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: daysLeft <= 7 ? AppColors.error : (isDark ? Colors.white70 : Colors.black87),
+                      fontWeight: daysLeft <= 7 ? FontWeight.w600 : FontWeight.normal,
+                    ),
                   ),
                 ],
               ),
@@ -224,32 +204,5 @@ class OpportunityCard extends StatelessWidget {
         ),
       ),
     ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.05, end: 0);
-  }
-}
-
-class _Tag extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _Tag({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.25)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          color: color == AppColors.textMuted ? AppColors.textSecondary : color,
-        ),
-      ),
-    );
   }
 }

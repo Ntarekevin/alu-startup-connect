@@ -36,10 +36,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final results = _filtered;
-
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.darkBackground,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,11 +97,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 14),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppColors.teal
-                                  : AppColors.surface,
+                                  ? AppColors.secondary
+                                  : AppColors.darkSurface,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: isSelected ? AppColors.teal : AppColors.cardBorder,
+                                color: isSelected ? AppColors.secondary : AppColors.darkBorder,
                               ),
                             ),
                             child: Center(
@@ -113,8 +111,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                   fontSize: 13,
                                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                                   color: isSelected
-                                      ? AppColors.background
-                                      : AppColors.textSecondary,
+                                      ? Colors.white
+                                      : AppColors.darkTextSecondary,
                                 ),
                               ),
                             ),
@@ -170,13 +168,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
             ),
 
             const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                '${results.length} result${results.length != 1 ? 's' : ''}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
             const SizedBox(height: 8),
 
             // ── Results ───────────────────────────────────────────────────
@@ -185,7 +176,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 stream: FirebaseFirestore.instance.collection('opportunities').snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: AppColors.teal));
+                    return const Center(child: CircularProgressIndicator(color: AppColors.secondary));
                   }
                   if (snapshot.hasError) {
                     return const Center(child: Text('Failed to load opportunities'));

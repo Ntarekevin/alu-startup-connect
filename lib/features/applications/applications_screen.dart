@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import '../../core/models/models.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/widgets/tag_chip.dart';
 
 class ApplicationsScreen extends StatefulWidget {
   const ApplicationsScreen({super.key});
@@ -15,8 +16,7 @@ class ApplicationsScreen extends StatefulWidget {
 
 class _ApplicationsScreenState extends State<ApplicationsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
-  final List<String> _statuses = ['All', 'Applied', 'Reviewing', 'Interview', 'Offer', 'Rejected'];
+  final List<String> _statuses = ['All', 'Reviewing', 'Interview', 'Offer'];
 
   @override
   void initState() {
@@ -32,68 +32,74 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Header ────────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('My Applications',
-                      style: Theme.of(context).textTheme.displayMedium)
-                      .animate()
-                      .fadeIn(duration: 300.ms),
-                  const SizedBox(height: 4),
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('applications')
-                        .where('studentId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-                        .snapshots(),
-                    builder: (context, s) {
-                      final count = s.data?.docs.length ?? 0;
-                      return Text(
-                        '$count total application${count != 1 ? 's' : ''}',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      );
-                    },
-                  ),
+                  Text(
+                    'Applications',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : Colors.black87,
+                      letterSpacing: -0.5,
+                    ),
+                  ).animate().fadeIn().slideX(begin: -0.1, end: 0),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.more_horiz_rounded, color: isDark ? Colors.white : Colors.black87),
+                  )
                 ],
               ),
             ),
 
-            // ── Tabs ──────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+            // ── Segmented Control ───────────────────────────────────────────
+            Container(
+              height: 48,
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : Colors.grey[200],
+                borderRadius: BorderRadius.circular(50),
+              ),
               child: TabBar(
                 controller: _tabController,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
                 dividerColor: Colors.transparent,
                 indicator: BoxDecoration(
-                  color: AppColors.teal,
-                  borderRadius: BorderRadius.circular(8),
+                  color: isDark ? Colors.white.withOpacity(0.15) : Colors.white,
+                  borderRadius: BorderRadius.circular(50),
+                  boxShadow: isDark ? [] : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    )
+                  ],
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                labelColor: AppColors.background,
-                unselectedLabelColor: AppColors.textMuted,
-                labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                tabs: _statuses.map((s) {
-                  return Container(
-                    margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    child: Text(s),
-                  );
-                }).toList(),
+                labelColor: isDark ? Colors.white : Colors.black87,
+                unselectedLabelColor: isDark ? Colors.white54 : Colors.black54,
+                labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                tabs: _statuses.map((s) => Tab(text: s)).toList(),
               ),
-            ),
+            ).animate().fadeIn(delay: 50.ms),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             // ── Tab content ───────────────────────────────────────────────
             Expanded(
@@ -105,7 +111,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> with SingleTick
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: AppColors.teal));
+                    return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}'));
@@ -122,19 +128,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> with SingleTick
                       companyLogo: '',
                       status: data['status'] ?? 'applied',
                       appliedAt: (data['appliedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-                      timeline: [
-                        ApplicationEvent(
-                          status: 'applied',
-                          message: 'Application received',
-                          timestamp: (data['appliedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-                        ),
-                        if (data['status'] != 'applied' && data['status'] != 'pending')
-                          ApplicationEvent(
-                            status: data['status'],
-                            message: 'Status updated to ${data['status']}',
-                            timestamp: DateTime.now(),
-                          ),
-                      ],
+                      timeline: [], // not used in new design directly, but kept for model consistency
                     );
                   }).toList();
 
@@ -146,15 +140,16 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> with SingleTick
                           : allApps
                               .where((a) =>
                                   a.status.toLowerCase() == status.toLowerCase() ||
-                                  (status == 'Applied' && (a.status == 'applied' || a.status == 'pending')))
+                                  (status == 'Reviewing' && (a.status == 'applied' || a.status == 'pending' || a.status == 'reviewing')))
                               .toList();
 
                       return apps.isEmpty
                           ? _EmptyTab(status: status)
-                          : ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                          : ListView.separated(
+                              padding: const EdgeInsets.all(24),
                               itemCount: apps.length,
-                              itemBuilder: (_, i) => _ApplicationCard(application: apps[i]),
+                              separatorBuilder: (_, __) => const SizedBox(height: 16),
+                              itemBuilder: (_, i) => _ExpandableApplicationCard(application: apps[i]),
                             );
                     }).toList(),
                   );
@@ -168,213 +163,266 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> with SingleTick
   }
 }
 
-
-
-class _ApplicationCard extends StatelessWidget {
+class _ExpandableApplicationCard extends StatefulWidget {
   final ApplicationModel application;
 
-  const _ApplicationCard({required this.application});
+  const _ExpandableApplicationCard({required this.application});
+
+  @override
+  State<_ExpandableApplicationCard> createState() => _ExpandableApplicationCardState();
+}
+
+class _ExpandableApplicationCardState extends State<_ExpandableApplicationCard> {
+  bool _expanded = false;
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'applied': return AppColors.statusApplied;
-      case 'reviewing': return AppColors.statusReviewing;
-      case 'interview': return AppColors.statusInterview;
-      case 'offer': return AppColors.statusOffer;
-      case 'rejected': return AppColors.statusRejected;
-      default: return AppColors.textMuted;
+      case 'applied': 
+      case 'pending':
+      case 'reviewing': return const Color(0xFF5B8DEF); // Blue
+      case 'interview': return const Color(0xFF6C5CE7); // Purple
+      case 'offer': return const Color(0xFF22D3A5); // Green
+      case 'rejected': return const Color(0xFFFF4B63); // Red
+      default: return Colors.grey;
     }
   }
 
   String _statusLabel(String status) {
     switch (status) {
-      case 'applied': return 'Applied';
+      case 'applied': 
+      case 'pending':
       case 'reviewing': return 'Under Review';
-      case 'interview': return 'Interview';
-      case 'offer': return '🎉 Offer!';
+      case 'interview': return 'Interviewing';
+      case 'offer': return 'Offer Received';
       case 'rejected': return 'Not Selected';
-      default: return status;
+      default: return 'Under Review';
     }
   }
 
   IconData _statusIcon(String status) {
     switch (status) {
-      case 'applied': return Icons.send_outlined;
-      case 'reviewing': return Icons.manage_search;
-      case 'interview': return Icons.videocam_outlined;
+      case 'applied': 
+      case 'pending':
+      case 'reviewing': return Icons.remove_red_eye_rounded;
+      case 'interview': return Icons.videocam_rounded;
       case 'offer': return Icons.star_rounded;
-      case 'rejected': return Icons.close;
-      default: return Icons.circle;
+      case 'rejected': return Icons.close_rounded;
+      default: return Icons.remove_red_eye_rounded;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final color = _statusColor(application.status);
+    final app = widget.application;
+    final color = _statusColor(app.status);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: application.status == 'offer'
-              ? AppColors.gold.withOpacity(0.4)
-              : AppColors.cardBorder,
-        ),
-        boxShadow: application.status == 'offer'
-            ? [BoxShadow(color: AppColors.gold.withOpacity(0.08), blurRadius: 16)]
-            : null,
+        color: isDark ? AppColors.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.cardBorder),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Image.network(
-                    application.companyLogo,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: AppColors.surfaceLight,
-                      child: Center(
-                        child: Text(
-                          application.companyName[0],
-                          style: const TextStyle(color: AppColors.teal, fontWeight: FontWeight.w700),
-                        ),
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          )
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: app.companyLogo.isNotEmpty
+                          ? Image.network(app.companyLogo, fit: BoxFit.cover)
+                          : Center(
+                              child: Text(
+                                app.companyName[0],
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 20,
+                                ),
+                              ),
+                            ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            app.opportunityTitle,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            app.companyName,
+                            style: TextStyle(
+                              color: isDark ? Colors.white60 : Colors.black54,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        application.companyName,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textMuted,
+                
+                const SizedBox(height: 16),
+                
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TagChip(
+                      label: _statusLabel(app.status),
+                      color: color,
+                      icon: _statusIcon(app.status),
+                    ),
+                    Text(
+                      DateFormat('MMM d').format(app.appliedAt),
+                      style: TextStyle(
+                        color: isDark ? Colors.white54 : Colors.black45,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Expanded Section
+                if (_expanded) ...[
+                  const SizedBox(height: 20),
+                  Divider(color: isDark ? Colors.white12 : Colors.black12),
+                  const SizedBox(height: 16),
+                  
+                  if (app.status == 'interview') ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.2),
+                              shape: BoxShape.circle,
                             ),
+                            child: Icon(Icons.videocam_rounded, color: color, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Interview Scheduled',
+                                  style: TextStyle(color: color, fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Tomorrow, 2:00 PM (EAT)',
+                                  style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        application.opportunityTitle,
-                        style: Theme.of(context).textTheme.titleMedium,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    ),
+                  ] else if (app.status == 'offer') ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: color.withOpacity(0.25)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(_statusIcon(application.status), size: 12, color: color),
-                      const SizedBox(width: 4),
-                      Text(
-                        _statusLabel(application.status),
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11,
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.star_rounded, color: color, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Offer Received!',
+                                  style: TextStyle(color: color, fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Check your email for the offer letter.',
+                                  style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    // Default generic next step message
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline_rounded, color: isDark ? Colors.white54 : Colors.black54, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Your application is being reviewed. The team will reach out if your profile is a match.',
+                            style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 13, height: 1.5),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                      ],
+                    ),
+                  ],
+                ]
               ],
             ),
-
-            const SizedBox(height: 14),
-
-            // Timeline
-            _Timeline(events: application.timeline),
-
-            const SizedBox(height: 10),
-            const Divider(color: AppColors.cardBorder, height: 1),
-            const SizedBox(height: 10),
-
-            // Footer
-            Text(
-              'Applied ${DateFormat('MMM d, yyyy').format(application.appliedAt)}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+          ),
         ),
       ),
-    ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.05, end: 0);
-  }
-}
-
-class _Timeline extends StatelessWidget {
-  final List<ApplicationEvent> events;
-  const _Timeline({required this.events});
-
-  static const _allStatuses = ['applied', 'reviewing', 'interview', 'offer'];
-
-  Color _color(String status) {
-    switch (status) {
-      case 'applied': return AppColors.statusApplied;
-      case 'reviewing': return AppColors.statusReviewing;
-      case 'interview': return AppColors.statusInterview;
-      case 'offer': return AppColors.statusOffer;
-      default: return AppColors.textMuted;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final completedStatuses = events.map((e) => e.status).toSet();
-    return Row(
-      children: _allStatuses.asMap().entries.map((entry) {
-        final i = entry.key;
-        final status = entry.value;
-        final isCompleted = completedStatuses.contains(status);
-        final color = isCompleted ? _color(status) : AppColors.surfaceLight;
-        return Expanded(
-          child: Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: isCompleted ? color : AppColors.surfaceLight,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isCompleted ? color : AppColors.cardBorder,
-                    width: 1.5,
-                  ),
-                ),
-              ),
-              if (i < _allStatuses.length - 1)
-                Expanded(
-                  child: Container(
-                    height: 2,
-                    color: isCompleted ? color.withOpacity(0.4) : AppColors.surfaceLight,
-                  ),
-                ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
+    ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.1, end: 0);
   }
 }
 
@@ -388,16 +436,24 @@ class _EmptyTab extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('📋', style: TextStyle(fontSize: 48)),
-          const SizedBox(height: 16),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.folder_open_rounded, size: 36, color: AppColors.primary),
+          ),
+          const SizedBox(height: 24),
           Text(
             'No ${status == 'All' ? '' : status.toLowerCase()} applications',
-            style: Theme.of(context).textTheme.titleLarge,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Explore opportunities and start applying!',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: TextStyle(color: Colors.grey),
             textAlign: TextAlign.center,
           ),
         ],

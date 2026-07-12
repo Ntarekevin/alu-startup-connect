@@ -11,8 +11,10 @@ class CompanyProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance.collection('users').doc(companyId).snapshots(),
         builder: (context, companySnap) {
@@ -52,15 +54,15 @@ class CompanyProfileScreen extends StatelessWidget {
                   SliverAppBar(
                     expandedHeight: 200,
                     pinned: true,
-                    backgroundColor: AppColors.surface,
+                    backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
                     leading: IconButton(
                       icon: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: AppColors.background.withOpacity(0.7),
+                          color: (isDark ? Colors.black : Colors.white).withOpacity(0.7),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.arrow_back, size: 20),
+                        child: Icon(Icons.arrow_back, size: 20, color: isDark ? Colors.white : Colors.black87),
                       ),
                       onPressed: () => Navigator.pop(context),
                     ),
@@ -69,9 +71,9 @@ class CompanyProfileScreen extends StatelessWidget {
                         fit: StackFit.expand,
                         children: [
                           Container(
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [Color(0xFF1A2550), AppColors.surface],
+                                colors: [const Color(0xFF6C5CE7), isDark ? AppColors.darkSurface : Colors.white],
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                               ),
@@ -87,15 +89,15 @@ class CompanyProfileScreen extends StatelessWidget {
                                   width: 64,
                                   height: 64,
                                   decoration: BoxDecoration(
-                                    color: AppColors.teal.withOpacity(0.15),
+                                    color: AppColors.primary.withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: AppColors.cardBorder),
+                                    border: Border.all(color: isDark ? Colors.white24 : Colors.black12),
                                   ),
                                   child: Center(
                                     child: Text(
                                       companyName.isNotEmpty ? companyName[0] : '?',
                                       style: const TextStyle(
-                                        color: AppColors.teal,
+                                        color: AppColors.primary,
                                         fontWeight: FontWeight.w700,
                                         fontSize: 28,
                                       ),
@@ -109,8 +111,8 @@ class CompanyProfileScreen extends StatelessWidget {
                                     children: [
                                       Text(
                                         companyName,
-                                        style: const TextStyle(
-                                          color: AppColors.textPrimary,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : Colors.black87,
                                           fontSize: 20,
                                           fontWeight: FontWeight.w700,
                                         ),
@@ -118,8 +120,8 @@ class CompanyProfileScreen extends StatelessWidget {
                                       if (companyEmail.isNotEmpty)
                                         Text(
                                           companyEmail,
-                                          style: const TextStyle(
-                                              color: AppColors.textSecondary,
+                                          style: TextStyle(
+                                              color: isDark ? Colors.white70 : Colors.black54,
                                               fontSize: 12),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -151,13 +153,13 @@ class CompanyProfileScreen extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppColors.teal.withOpacity(0.15),
+                                  color: AppColors.primary.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
                                   '${openRoles.length}',
                                   style: const TextStyle(
-                                    color: AppColors.teal,
+                                    color: AppColors.primary,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 12,
                                   ),
@@ -173,7 +175,7 @@ class CompanyProfileScreen extends StatelessWidget {
                                 padding: EdgeInsets.all(24),
                                 child: Text(
                                   'No open roles right now',
-                                  style: TextStyle(color: AppColors.textMuted),
+                                  style: TextStyle(color: Colors.grey),
                                 ),
                               ),
                             )
@@ -191,9 +193,9 @@ class CompanyProfileScreen extends StatelessWidget {
                                   margin: const EdgeInsets.only(bottom: 10),
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: AppColors.surface,
+                                    color: isDark ? AppColors.darkSurface : Colors.white,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: AppColors.cardBorder),
+                                    border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
                                   ),
                                   child: Row(
                                     children: [
@@ -213,7 +215,7 @@ class CompanyProfileScreen extends StatelessWidget {
                                             Text(
                                               '${opp.type} · ${opp.isRemote ? 'Remote' : opp.location}',
                                               style: const TextStyle(
-                                                  color: AppColors.textMuted,
+                                                  color: Colors.grey,
                                                   fontSize: 12),
                                             ),
                                           ],
@@ -223,14 +225,14 @@ class CompanyProfileScreen extends StatelessWidget {
                                         Text(
                                           opp.stipend!,
                                           style: const TextStyle(
-                                            color: AppColors.gold,
+                                            color: AppColors.secondary,
                                             fontWeight: FontWeight.w600,
                                             fontSize: 13,
                                           ),
                                         ),
                                       const SizedBox(width: 8),
                                       const Icon(Icons.chevron_right,
-                                          color: AppColors.textMuted, size: 18),
+                                          color: Colors.grey, size: 18),
                                     ],
                                   ),
                                 ),

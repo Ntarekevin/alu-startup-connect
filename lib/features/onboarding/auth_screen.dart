@@ -24,6 +24,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   final _nameController = TextEditingController();
   bool _obscure = true;
   bool _isLoading = false;
+  String? _loadingMessage;
   String _selectedRole = 'student';
   File? _proofFile;
   String? _proofFileName;
@@ -58,10 +59,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
       
-      // Check user role/status in Firestore
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Admin: any @aluadmin.com email goes straight to admin dashboard
         if (user.email?.endsWith('@aluadmin.com') == true) {
           if (mounted) context.go('/admin');
           return;
@@ -98,7 +97,6 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Admin: any @aluadmin.com email goes straight to admin dashboard
         if (user.email?.endsWith('@aluadmin.com') == true) {
           if (mounted) context.go('/admin');
           return;
@@ -122,16 +120,31 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     }
   }
 
+  bool _isPickingFile = false;
+
   Future<void> _pickProofFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'png'],
-    );
-    if (result != null) {
-      setState(() {
-        _proofFile = File(result.files.single.path!);
-        _proofFileName = result.files.single.name;
-      });
+    if (_isPickingFile) return;
+    _isPickingFile = true;
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'png'],
+        withData: false,
+        withReadStream: false,
+      );
+      if (result != null && result.files.isNotEmpty) {
+        final path = result.files.single.path;
+        if (path != null) {
+          setState(() {
+            _proofFile = File(path);
+            _proofFileName = result.files.single.name;
+          });
+        }
+      }
+    } catch (e) {
+      // Silently handle if picker is already active
+    } finally {
+      _isPickingFile = false;
     }
   }
 
@@ -142,7 +155,6 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     
     if (email.isEmpty || password.isEmpty || name.isEmpty) return;
 
-    // Block admin-domain emails from self-registering
     if (email.endsWith('@aluadmin.com')) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Admin accounts are created by the ALU team, not through self-registration.')),
@@ -160,7 +172,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _loadingMessage = 'Creating account...';
+    });
     try {
       final userCred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
@@ -169,11 +184,13 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       
       String? proofUrl;
       if (_selectedRole == 'startup' && _proofFile != null) {
+        setState(() => _loadingMessage = 'Uploading proof...');
         final ref = FirebaseStorage.instance.ref().child('startup_proofs/${userCred.user!.uid}_$_proofFileName');
         await ref.putFile(_proofFile!);
         proofUrl = await ref.getDownloadURL();
       }
       
+      setState(() => _loadingMessage = 'Finalizing profile...');
       await FirebaseFirestore.instance.collection('users').doc(userCred.user!.uid).set({
         'name': name,
         'email': email,
@@ -193,14 +210,23 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     } on FirebaseAuthException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Signup failed')));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadingMessage = null;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final surfaceColor = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -208,7 +234,6 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             children: [
               const SizedBox(height: 32),
 
-              // Logo + title
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -218,12 +243,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       gradient: const LinearGradient(
-                        colors: [AppColors.teal, Color(0xFF00A896)],
+                        colors: [AppColors.primary, Color(0xFF8E7DF9)],
                       ),
                       boxShadow: [
-                        BoxShadow(
-                            color: AppColors.teal.withOpacity(0.4),
-                            blurRadius: 16),
+                        BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 16),
                       ],
                     ),
                     child: const Center(
@@ -232,7 +255,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.background,
+                          color: Colors.white,
                           letterSpacing: 1,
                         ),
                       ),
@@ -243,6 +266,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     'Startup Connect',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
                   ),
                 ],
@@ -250,102 +274,41 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
               const SizedBox(height: 32),
 
-              // Tab bar
+              // TabBar wrapper
               Container(
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.cardBorder),
+                  color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: TabBar(
                   controller: _tabController,
                   indicator: BoxDecoration(
-                    color: AppColors.teal,
+                    color: surfaceColor,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  indicatorSize: TabBarIndicatorSize.tab,
+                  labelColor: isDark ? Colors.white : Colors.black87,
+                  unselectedLabelColor: Colors.grey,
                   dividerColor: Colors.transparent,
-                  labelColor: AppColors.background,
-                  unselectedLabelColor: AppColors.textMuted,
-                  labelStyle: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
                   tabs: const [
                     Tab(text: 'Sign In'),
                     Tab(text: 'Sign Up'),
                   ],
                 ),
-              ).animate().fadeIn(delay: 100.ms),
+              ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 32),
 
-              // Tab content
               SizedBox(
                 height: 380,
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildSignIn(),
-                    _buildSignUp(),
+                    _buildSignInTab(isDark),
+                    _buildSignUpTab(isDark),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              // Divider
-              Row(children: [
-                const Expanded(child: Divider(color: AppColors.cardBorder)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('or', style: Theme.of(context).textTheme.bodySmall),
-                ),
-                const Expanded(child: Divider(color: AppColors.cardBorder)),
-              ]),
-
-              const SizedBox(height: 16),
-
-              // Google sign-in button
-              GestureDetector(
-                onTap: _isLoading ? null : _signInWithGoogle,
-                child: Container(
-                  width: double.infinity,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.cardBorder),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 22,
-                        height: 22,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                        child: const Center(
-                          child: Text('G', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.blue)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Continue with Google',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ).animate().fadeIn(delay: 200.ms),
-
-              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -353,81 +316,92 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildSignIn() {
+  Widget _buildSignInTab(bool isDark) {
     return Column(
       children: [
         TextField(
           controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          style: const TextStyle(color: AppColors.textPrimary),
           decoration: const InputDecoration(
-            labelText: 'Email',
-            hintText: 'your@alustudent.com',
-            prefixIcon: Icon(Icons.email_outlined, color: AppColors.textMuted, size: 20),
+            hintText: 'Email address',
+            prefixIcon: Icon(Icons.email_outlined),
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         TextField(
           controller: _passwordController,
           obscureText: _obscure,
-          style: const TextStyle(color: AppColors.textPrimary),
           decoration: InputDecoration(
-            labelText: 'Password',
-            hintText: '••••••••',
-            prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textMuted, size: 20),
+            hintText: 'Password',
+            prefixIcon: const Icon(Icons.lock_outline),
             suffixIcon: IconButton(
-              icon: Icon(
-                _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                color: AppColors.textMuted,
-                size: 20,
-              ),
+              icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
               onPressed: () => setState(() => _obscure = !_obscure),
             ),
           ),
         ),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: () {},
-            child: const Text('Forgot password?', style: TextStyle(color: AppColors.teal, fontSize: 13)),
-          ),
-        ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 24),
         GlowButton(
-          label: _isLoading ? 'Signing In...' : 'Sign In', 
-          onPressed: _isLoading ? () {} : _signInWithEmail, 
-          width: double.infinity
+          label: _isLoading ? 'Signing in...' : 'Sign In',
+          onPressed: _isLoading ? () {} : _signInWithEmail,
+          width: double.infinity,
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text('OR', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            ),
+            Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+          ],
+        ),
+        const SizedBox(height: 20),
+        OutlinedButton.icon(
+          onPressed: _isLoading ? null : _signInWithGoogle,
+          icon: const Icon(Icons.g_mobiledata, size: 28),
+          label: const Text('Continue with Google'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildSignUp() {
-    return Column(
-      children: [
+  Widget _buildSignUpTab(bool isDark) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
         TextField(
           controller: _nameController,
-          style: const TextStyle(color: AppColors.textPrimary),
           decoration: const InputDecoration(
-            labelText: 'Full Name',
-            hintText: 'Amara Osei',
-            prefixIcon: Icon(Icons.person_outline, color: AppColors.textMuted, size: 20),
+            hintText: 'Full Name / Startup Name',
+            prefixIcon: Icon(Icons.person_outline),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         TextField(
           controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          style: const TextStyle(color: AppColors.textPrimary),
           decoration: const InputDecoration(
-            labelText: 'Email',
-            hintText: 'your@alustudent.com',
-            prefixIcon: Icon(Icons.email_outlined, color: AppColors.textMuted, size: 20),
+            hintText: 'Email address',
+            prefixIcon: Icon(Icons.email_outlined),
           ),
         ),
-        const SizedBox(height: 12),
-        // Role selector
+        const SizedBox(height: 16),
+        TextField(
+          controller: _passwordController,
+          obscureText: _obscure,
+          decoration: InputDecoration(
+            hintText: 'Password',
+            prefixIcon: const Icon(Icons.lock_outline),
+            suffixIcon: IconButton(
+              icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+              onPressed: () => setState(() => _obscure = !_obscure),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
@@ -444,10 +418,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 label: 'Startup',
                 icon: Icons.business_outlined,
                 isSelected: _selectedRole == 'startup',
-                onTap: () => setState(() {
-                  _selectedRole = 'startup';
-                  // Clear proof if switching role
-                }),
+                onTap: () => setState(() => _selectedRole = 'startup'),
               ),
             ),
           ],
@@ -457,9 +428,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: isDark ? AppColors.darkSurface : Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.cardBorder, style: BorderStyle.dash),
+              border: Border.all(color: isDark ? Colors.white24 : Colors.black12),
             ),
             child: Row(
               children: [
@@ -467,7 +438,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   child: Text(
                     _proofFileName ?? 'Upload ALU Connection Proof (PDF/Img)',
                     style: TextStyle(
-                      color: _proofFileName != null ? AppColors.textPrimary : AppColors.textMuted,
+                      color: _proofFileName != null 
+                          ? (isDark ? Colors.white : Colors.black87) 
+                          : Colors.grey,
                       fontSize: 13,
                     ),
                     maxLines: 1,
@@ -476,8 +449,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 ),
                 TextButton.icon(
                   onPressed: _pickProofFile,
-                  icon: const Icon(Icons.upload_file, size: 18, color: AppColors.teal),
-                  label: const Text('Browse', style: TextStyle(color: AppColors.teal)),
+                  icon: const Icon(Icons.upload_file, size: 18, color: AppColors.primary),
+                  label: const Text('Browse', style: TextStyle(color: AppColors.primary)),
                 ),
               ],
             ),
@@ -485,11 +458,12 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         ],
         const SizedBox(height: 16),
         GlowButton(
-          label: _isLoading ? 'Creating...' : 'Create Account',
+          label: _isLoading ? (_loadingMessage ?? 'Creating...') : 'Create Account',
           onPressed: _isLoading ? () {} : _signUpWithEmail,
           width: double.infinity,
         ),
       ],
+      ),
     );
   }
 }
@@ -509,27 +483,35 @@ class _RoleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.teal.withOpacity(0.12) : AppColors.surface,
+          color: isSelected 
+              ? AppColors.primary.withOpacity(0.12) 
+              : (isDark ? AppColors.darkSurface : Colors.white),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.teal : AppColors.cardBorder,
+            color: isSelected ? AppColors.primary : (isDark ? Colors.white12 : Colors.black12),
             width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Column(
           children: [
-            Icon(icon, color: isSelected ? AppColors.teal : AppColors.textMuted, size: 24),
+            Icon(
+              icon, 
+              color: isSelected ? AppColors.primary : Colors.grey, 
+              size: 24
+            ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? AppColors.teal : AppColors.textMuted,
+                color: isSelected ? AppColors.primary : Colors.grey,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 fontSize: 13,
               ),

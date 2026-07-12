@@ -34,11 +34,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final surfaceColor = isDark ? AppColors.darkSurface : Colors.white;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: const Text('Admin — Startup Verification'),
-        backgroundColor: AppColors.surface,
+        backgroundColor: surfaceColor,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -58,7 +62,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.teal));
+            return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Center(
@@ -89,11 +93,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
               final data = docs[index].data() as Map<String, dynamic>;
               final uid = docs[index].id;
               return Card(
-                color: AppColors.surface,
+                color: surfaceColor,
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
-                  side: BorderSide(color: AppColors.cardBorder),
+                  side: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -107,15 +111,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
-                              color: AppColors.teal.withOpacity(0.12),
+                              color: AppColors.primary.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.teal.withOpacity(0.3)),
+                              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                             ),
                             child: Center(
                               child: Text(
                                 (data['name'] as String? ?? '?')[0].toUpperCase(),
                                 style: const TextStyle(
-                                  color: AppColors.teal,
+                                  color: AppColors.primary,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 18,
                                 ),
@@ -129,8 +133,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               children: [
                                 Text(
                                   data['name'] ?? 'Unknown Startup',
-                                  style: const TextStyle(
-                                    color: AppColors.textPrimary,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : Colors.black87,
                                     fontSize: 17,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -138,7 +142,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 const SizedBox(height: 2),
                                 Text(
                                   data['email'] ?? '',
-                                  style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                                  style: const TextStyle(color: Colors.grey, fontSize: 13),
                                 ),
                               ],
                             ),
@@ -164,7 +168,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
 
                       const SizedBox(height: 14),
-                      const Divider(color: AppColors.cardBorder, height: 1),
+                      Divider(color: isDark ? Colors.white12 : Colors.black12, height: 1),
                       const SizedBox(height: 14),
 
                       // Proof document
@@ -174,19 +178,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                             decoration: BoxDecoration(
-                              color: AppColors.teal.withOpacity(0.08),
+                              color: AppColors.primary.withOpacity(0.08),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.teal.withOpacity(0.3)),
+                              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                             ),
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.open_in_new, color: AppColors.teal, size: 16),
+                                Icon(Icons.open_in_new, color: AppColors.primary, size: 16),
                                 SizedBox(width: 8),
                                 Text(
                                   'View ALU Proof Document',
                                   style: TextStyle(
-                                    color: AppColors.teal,
+                                    color: AppColors.primary,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 13,
                                   ),

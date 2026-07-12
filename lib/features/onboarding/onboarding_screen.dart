@@ -20,7 +20,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: 'Launch Your Career',
       subtitle:
           'Discover internships and job opportunities at Africa\'s most innovative startups, handpicked for ALU students.',
-      gradientColors: [Color(0xFF00D9C0), Color(0xFF00A896)],
+      gradientColors: [Color(0xFFFF4B63), Color(0xFFE53E55)],
     ),
     _OnboardingPage(
       emoji: '🌍',
@@ -34,7 +34,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: 'Apply in Minutes',
       subtitle:
           'Build your profile once, apply with one tap, and track every application — all in one place.',
-      gradientColors: [Color(0xFF9B59F5), Color(0xFF7A3FD4)],
+      gradientColors: [Color(0xFF6C5CE7), Color(0xFF5B4CD7)],
     ),
   ];
 
@@ -57,8 +57,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -71,7 +73,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   onPressed: () => context.go('/auth'),
                   child: Text(
                     'Skip',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                    style: TextStyle(color: isDark ? Colors.white60 : Colors.black54, fontSize: 14),
                   ),
                 ),
               ),
@@ -101,7 +103,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     borderRadius: BorderRadius.circular(4),
                     color: _currentPage == i
                         ? _pages[_currentPage].gradientColors[0]
-                        : AppColors.surfaceLight,
+                        : (isDark ? Colors.white24 : Colors.black12),
                   ),
                 ),
               ),
@@ -152,14 +154,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               children: [
                 Text(
                   'Already have an account? ',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  style: TextStyle(color: isDark ? Colors.white60 : Colors.black54, fontSize: 13),
                 ),
                 GestureDetector(
                   onTap: () => context.go('/auth'),
                   child: const Text(
                     'Sign in',
                     style: TextStyle(
-                      color: AppColors.teal,
+                      color: AppColors.primary,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -181,6 +183,8 @@ class _PageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
@@ -233,7 +237,7 @@ class _PageContent extends StatelessWidget {
           Text(
             page.subtitle,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: isDark ? Colors.white70 : Colors.black87,
                   height: 1.6,
                 ),
             textAlign: TextAlign.center,

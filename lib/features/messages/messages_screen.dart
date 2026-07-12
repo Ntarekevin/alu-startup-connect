@@ -11,8 +11,12 @@ class MessagesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final surfaceColor = isDark ? AppColors.darkSurface : Colors.white;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,12 +53,12 @@ class MessagesScreen extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: surfaceColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.cardBorder),
+                      border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
                     ),
-                    child: const Icon(Icons.edit_outlined,
-                        color: AppColors.textSecondary, size: 18),
+                    child: Icon(Icons.edit_outlined,
+                        color: isDark ? Colors.white70 : Colors.black54, size: 18),
                   ),
                 ],
               ),
@@ -68,7 +72,7 @@ class MessagesScreen extends StatelessWidget {
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: AppColors.teal));
+                    return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}'));
@@ -76,7 +80,7 @@ class MessagesScreen extends StatelessWidget {
 
                   final docs = snapshot.data?.docs ?? [];
                   if (docs.isEmpty) {
-                    return const Center(child: Text('No conversations yet', style: TextStyle(color: AppColors.textMuted)));
+                    return const Center(child: Text('No conversations yet', style: TextStyle(color: Colors.grey)));
                   }
 
                   final currentUid = FirebaseAuth.instance.currentUser?.uid;
@@ -123,6 +127,9 @@ class _ConversationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? AppColors.darkSurface : Colors.white;
+
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -134,12 +141,12 @@ class _ConversationTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: surfaceColor,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: conversation.unreadCount > 0
-                ? AppColors.teal.withOpacity(0.3)
-                : AppColors.cardBorder,
+                ? AppColors.primary.withOpacity(0.3)
+                : (isDark ? Colors.white12 : Colors.black12),
           ),
         ),
         child: Row(
@@ -152,19 +159,19 @@ class _ConversationTile extends StatelessWidget {
                   height: 50,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.cardBorder),
+                    border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Image.network(
                     conversation.participantAvatar,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
-                      color: AppColors.surfaceLight,
+                      color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
                       child: Center(
                         child: Text(
                           conversation.participantName[0],
                           style: const TextStyle(
-                              color: AppColors.teal, fontWeight: FontWeight.w700),
+                              color: AppColors.primary, fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),
@@ -178,14 +185,14 @@ class _ConversationTile extends StatelessWidget {
                       width: 18,
                       height: 18,
                       decoration: const BoxDecoration(
-                          color: AppColors.teal, shape: BoxShape.circle),
+                          color: AppColors.primary, shape: BoxShape.circle),
                       child: Center(
                         child: Text(
                           '${conversation.unreadCount}',
                           style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.background),
+                              color: Colors.white),
                         ),
                       ),
                     ),
@@ -212,8 +219,8 @@ class _ConversationTile extends StatelessWidget {
                         _formatTime(conversation.lastMessageTime),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: conversation.unreadCount > 0
-                                  ? AppColors.teal
-                                  : AppColors.textMuted,
+                                  ? AppColors.primary
+                                  : Colors.grey,
                               fontSize: 11,
                             ),
                       ),
@@ -223,7 +230,7 @@ class _ConversationTile extends StatelessWidget {
                   Text(
                     conversation.participantRole,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.teal,
+                          color: AppColors.primary,
                           fontSize: 11,
                         ),
                   ),
@@ -235,8 +242,8 @@ class _ConversationTile extends StatelessWidget {
                               ? FontWeight.w500
                               : FontWeight.w400,
                           color: conversation.unreadCount > 0
-                              ? AppColors.textSecondary
-                              : AppColors.textMuted,
+                              ? (isDark ? Colors.white70 : Colors.black87)
+                              : Colors.grey,
                         ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -321,11 +328,14 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final surfaceColor = isDark ? AppColors.darkSurface : Colors.white;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: surfaceColor,
         titleSpacing: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -342,11 +352,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 widget.conversation.participantAvatar,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
-                  color: AppColors.surfaceLight,
+                  color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
                   child: Center(
                     child: Text(
                       widget.conversation.participantName.isNotEmpty ? widget.conversation.participantName[0] : '?',
-                      style: const TextStyle(color: AppColors.teal),
+                      style: const TextStyle(color: AppColors.primary),
                     ),
                   ),
                 ),
@@ -359,14 +369,14 @@ class _ChatScreenState extends State<ChatScreen> {
                 Text(widget.conversation.participantName,
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 Text(widget.conversation.participantRole,
-                    style: const TextStyle(fontSize: 11, color: AppColors.teal)),
+                    style: const TextStyle(fontSize: 11, color: AppColors.primary)),
               ],
             ),
           ],
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppColors.cardBorder),
+          child: Container(height: 1, color: isDark ? Colors.white12 : Colors.black12),
         ),
       ),
       body: Column(
@@ -381,7 +391,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: AppColors.teal));
+                  return const Center(child: CircularProgressIndicator());
                 }
                 
                 final docs = snapshot.data?.docs ?? [];
@@ -411,32 +421,32 @@ class _ChatScreenState extends State<ChatScreen> {
           Container(
             padding: EdgeInsets.fromLTRB(
                 16, 10, 16, MediaQuery.of(context).padding.bottom + 10),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              border: Border(top: BorderSide(color: AppColors.cardBorder)),
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              border: Border(top: BorderSide(color: isDark ? Colors.white12 : Colors.black12)),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'Type a message...',
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(color: AppColors.cardBorder),
+                        borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(color: AppColors.cardBorder),
+                        borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide:
-                            const BorderSide(color: AppColors.teal, width: 1.5),
+                            const BorderSide(color: AppColors.primary, width: 1.5),
                       ),
                     ),
                     onSubmitted: (_) => _send(),
@@ -450,19 +460,19 @@ class _ChatScreenState extends State<ChatScreen> {
                     height: 44,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [AppColors.teal, Color(0xFF00A896)],
+                        colors: [AppColors.primary, Color(0xFF8E7DF9)],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.teal.withOpacity(0.4),
+                          color: AppColors.primary.withOpacity(0.4),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: const Icon(Icons.send_rounded,
-                        color: AppColors.background, size: 18),
+                        color: Colors.white, size: 18),
                   ),
                 ),
               ],
@@ -482,6 +492,12 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? AppColors.darkSurface : Colors.white;
+    final primaryColor = AppColors.primary;
+    final isMeBg = primaryColor;
+    final notMeBg = surfaceColor;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -497,18 +513,18 @@ class _ChatBubble extends StatelessWidget {
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isMe ? AppColors.teal : AppColors.surface,
+              color: isMe ? isMeBg : notMeBg,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
                 topRight: const Radius.circular(16),
                 bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
                 bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
               ),
-              border: isMe ? null : Border.all(color: AppColors.cardBorder),
+              border: isMe ? null : Border.all(color: isDark ? Colors.white12 : Colors.black12),
               boxShadow: isMe
                   ? [
                       BoxShadow(
-                        color: AppColors.teal.withOpacity(0.25),
+                        color: primaryColor.withOpacity(0.25),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
@@ -521,7 +537,7 @@ class _ChatBubble extends StatelessWidget {
                 Text(
                   message.text,
                   style: TextStyle(
-                    color: isMe ? AppColors.background : AppColors.textPrimary,
+                    color: isMe ? Colors.white : (isDark ? Colors.white : Colors.black87),
                     fontSize: 14,
                     height: 1.4,
                   ),
@@ -531,8 +547,8 @@ class _ChatBubble extends StatelessWidget {
                   DateFormat('h:mm a').format(message.timestamp),
                   style: TextStyle(
                     color: isMe
-                        ? AppColors.background.withOpacity(0.6)
-                        : AppColors.textMuted,
+                        ? Colors.white.withOpacity(0.6)
+                        : Colors.grey,
                     fontSize: 10,
                   ),
                 ),

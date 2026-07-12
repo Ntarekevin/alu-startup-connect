@@ -11,15 +11,15 @@ class StudentProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
         builder: (context, userSnap) {
           if (userSnap.connectionState == ConnectionState.waiting) {
-            return const Center(
-                child: CircularProgressIndicator(color: AppColors.teal));
+            return const Center(child: CircularProgressIndicator());
           }
 
           final data = userSnap.data?.data() as Map<String, dynamic>?;
@@ -37,7 +37,7 @@ class StudentProfileScreen extends StatelessWidget {
             slivers: [
               // ── Header ──────────────────────────────────────────────────────
               SliverAppBar(
-                backgroundColor: AppColors.background,
+                backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
                 expandedHeight: 240,
                 pinned: true,
                 toolbarHeight: 56,
@@ -58,7 +58,7 @@ class StudentProfileScreen extends StatelessWidget {
                       Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Color(0xFF0E1A45), Color(0xFF0A0F2E)],
+                            colors: [Color(0xFF6C5CE7), Color(0xFF8E7DF9)],
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                           ),
@@ -73,7 +73,7 @@ class StudentProfileScreen extends StatelessWidget {
                           height: 160,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.teal.withOpacity(0.06),
+                            color: Colors.white.withOpacity(0.1),
                           ),
                         ),
                       ),
@@ -90,27 +90,22 @@ class StudentProfileScreen extends StatelessWidget {
                               height: 80,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: const LinearGradient(
-                                  colors: [AppColors.teal, Color(0xFF00A896)],
-                                ),
-                                border: Border.all(
-                                    color: AppColors.background, width: 3),
+                                color: Colors.white,
+                                border: Border.all(color: AppColors.primary, width: 3),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.teal.withOpacity(0.4),
+                                    color: AppColors.primary.withOpacity(0.4),
                                     blurRadius: 20,
                                   ),
                                 ],
                               ),
                               child: Center(
                                 child: Text(
-                                  name.isNotEmpty
-                                      ? name[0].toUpperCase()
-                                      : '?',
+                                  name.isNotEmpty ? name[0].toUpperCase() : '?',
                                   style: const TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.background,
+                                    color: AppColors.primary,
                                   ),
                                 ),
                               ),
@@ -126,31 +121,28 @@ class StudentProfileScreen extends StatelessWidget {
                                     style: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.textPrimary,
+                                      color: Colors.white,
                                     ),
                                   ),
                                   if (major != null || university != null)
                                     Text(
-                                      [major, university]
-                                          .where((e) => e != null)
-                                          .join(' · '),
-                                      style: const TextStyle(
+                                      [major, university].where((e) => e != null).join(' · '),
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.textSecondary,
+                                        color: Colors.white.withOpacity(0.9),
                                       ),
                                     ),
                                   if (graduationYear != null) ...[
                                     const SizedBox(height: 4),
                                     Row(
                                       children: [
-                                        const Icon(Icons.school_outlined,
-                                            size: 12, color: AppColors.gold),
+                                        const Icon(Icons.school_outlined, size: 12, color: Colors.white),
                                         const SizedBox(width: 4),
                                         Text(
                                           'Class of $graduationYear',
                                           style: const TextStyle(
                                             fontSize: 11,
-                                            color: AppColors.gold,
+                                            color: Colors.white,
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
@@ -184,31 +176,17 @@ class StudentProfileScreen extends StatelessWidget {
                         builder: (context, appSnap) {
                           final docs = appSnap.data?.docs ?? [];
                           final total = docs.length;
-                          final interviews = docs
-                              .where((d) =>
-                                  (d.data() as Map<String, dynamic>)[
-                                      'status'] ==
-                                  'interview')
-                              .length;
-                          final offers = docs
-                              .where((d) =>
-                                  (d.data() as Map<String, dynamic>)[
-                                      'status'] ==
-                                  'offer')
-                              .length;
+                          final interviews = docs.where((d) => (d.data() as Map<String, dynamic>)['status'] == 'interview').length;
+                          final offers = docs.where((d) => (d.data() as Map<String, dynamic>)['status'] == 'offer').length;
                           return Row(
                             children: [
-                              _ProfileStat(
-                                  value: '$total', label: 'Applications'),
+                              _ProfileStat(value: '$total', label: 'Applications'),
                               const SizedBox(width: 12),
-                              _ProfileStat(
-                                  value: '$interviews', label: 'Interviews'),
+                              _ProfileStat(value: '$interviews', label: 'Interviews'),
                               const SizedBox(width: 12),
                               _ProfileStat(value: '$offers', label: 'Offers'),
                             ],
-                          )
-                              .animate()
-                              .fadeIn(delay: 100.ms, duration: 300.ms);
+                          ).animate().fadeIn(delay: 100.ms, duration: 300.ms);
                         },
                       ),
 
@@ -219,14 +197,9 @@ class StudentProfileScreen extends StatelessWidget {
                         title: 'Email',
                         child: Row(
                           children: [
-                            const Icon(Icons.email_outlined,
-                                size: 16, color: AppColors.teal),
+                            const Icon(Icons.email_outlined, size: 16, color: AppColors.primary),
                             const SizedBox(width: 8),
-                            Text(email,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(color: AppColors.textPrimary)),
+                            Text(email, style: Theme.of(context).textTheme.bodyMedium),
                           ],
                         ),
                       ),
@@ -239,10 +212,7 @@ class StudentProfileScreen extends StatelessWidget {
                           title: 'About',
                           child: Text(
                             bio,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(height: 1.7),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.7),
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -257,18 +227,16 @@ class StudentProfileScreen extends StatelessWidget {
                             runSpacing: 8,
                             children: skills.map((s) {
                               return Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: AppColors.teal.withOpacity(0.1),
+                                  color: AppColors.primary.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                      color: AppColors.teal.withOpacity(0.3)),
+                                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                                 ),
                                 child: Text(
                                   s,
                                   style: const TextStyle(
-                                    color: AppColors.teal,
+                                    color: AppColors.primary,
                                     fontWeight: FontWeight.w500,
                                     fontSize: 13,
                                   ),
@@ -300,7 +268,7 @@ class StudentProfileScreen extends StatelessWidget {
                                   icon: Icons.language,
                                   label: 'Portfolio',
                                   value: portfolioUrl,
-                                  color: AppColors.teal,
+                                  color: AppColors.primary,
                                 ),
                             ],
                           ),
@@ -328,28 +296,28 @@ class _ProfileStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: isDark ? AppColors.darkSurface : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.cardBorder),
+          border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
         ),
         child: Column(
           children: [
             Text(
               value,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.teal,
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w700,
                   ),
             ),
             const SizedBox(height: 2),
             Text(
               label,
-              style:
-                  Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
             ),
           ],
         ),
@@ -391,6 +359,7 @@ class _LinkRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
         Container(
@@ -405,12 +374,8 @@ class _LinkRow extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
-                style:
-                    const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-            Text(value,
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 13)),
+            Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            Text(value, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 13)),
           ],
         ),
       ],

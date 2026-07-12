@@ -15,10 +15,10 @@ class StartupApplicantsScreen extends StatelessWidget {
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
         title: const Text('Applicants'),
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.darkSurface,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -28,7 +28,7 @@ class StartupApplicantsScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.teal));
+            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
           }
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
@@ -37,7 +37,7 @@ class StartupApplicantsScreen extends StatelessWidget {
             return const Center(
               child: Text(
                 'No applicants yet',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 16),
+                style: TextStyle(color: AppColors.darkTextSecondary, fontSize: 16),
               ),
             );
           }
@@ -54,7 +54,7 @@ class StartupApplicantsScreen extends StatelessWidget {
               final appliedAt = (data['appliedAt'] as Timestamp?)?.toDate() ?? DateTime.now();
 
               return Card(
-                color: AppColors.surface,
+                color: AppColors.darkSurface,
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: Padding(
@@ -69,7 +69,7 @@ class StartupApplicantsScreen extends StatelessWidget {
                             child: Text(
                               data['studentName'] ?? 'Unknown Student',
                               style: const TextStyle(
-                                  color: AppColors.textPrimary,
+                                  color: AppColors.darkTextPrimary,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold),
                             ),
@@ -80,25 +80,25 @@ class StartupApplicantsScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         data['studentEmail'] ?? '',
-                        style: const TextStyle(color: AppColors.textMuted),
+                        style: const TextStyle(color: AppColors.darkTextSecondary),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Role: ${data['opportunityTitle']}',
-                        style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                        style: const TextStyle(color: AppColors.darkTextSecondary, fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Applied: ${DateFormat.yMMMd().format(appliedAt)}',
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                        style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 12),
                       ),
                       if (data['coverLetter'] != null && data['coverLetter'].isNotEmpty) ...[
                         const SizedBox(height: 12),
-                        const Text('Cover Letter:', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+                        const Text('Cover Letter:', style: TextStyle(color: AppColors.darkTextPrimary, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
                         Text(
                           data['coverLetter'],
-                          style: const TextStyle(color: AppColors.textSecondary),
+                          style: const TextStyle(color: AppColors.darkTextSecondary),
                         ),
                       ],
                       const SizedBox(height: 16),
@@ -107,9 +107,9 @@ class StartupApplicantsScreen extends StatelessWidget {
                           if (status == 'pending') ...[
                             Expanded(
                               child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.teal),
+                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
                                 onPressed: () => _updateStatus(docId, 'accepted'),
-                                child: const Text('Accept', style: TextStyle(color: AppColors.background)),
+                                child: const Text('Accept', style: TextStyle(color: Colors.white)),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -126,7 +126,7 @@ class StartupApplicantsScreen extends StatelessWidget {
                             child: ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.surfaceLight,
-                                foregroundColor: AppColors.teal,
+                                foregroundColor: AppColors.secondary,
                               ),
                               icon: const Icon(Icons.message, size: 18),
                               label: const Text('Message'),

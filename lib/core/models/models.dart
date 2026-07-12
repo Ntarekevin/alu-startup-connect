@@ -201,6 +201,26 @@ class NotificationModel {
     this.isRead = false,
     this.avatarUrl,
   });
+
+  NotificationModel copyWith({
+    String? id,
+    String? title,
+    String? body,
+    String? type,
+    DateTime? timestamp,
+    bool? isRead,
+    String? avatarUrl,
+  }) {
+    return NotificationModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      type: type ?? this.type,
+      timestamp: timestamp ?? this.timestamp,
+      isRead: isRead ?? this.isRead,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+    );
+  }
 }
 
 class MessageModel {

@@ -58,7 +58,9 @@ class AluStartupConnectApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'ALU Startup Connect',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       routerConfig: _router,
     );
   }

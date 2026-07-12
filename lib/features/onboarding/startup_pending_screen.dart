@@ -9,29 +9,31 @@ class StartupPendingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.hourglass_empty, size: 64, color: AppColors.teal),
+              const Icon(Icons.hourglass_empty, size: 64, color: AppColors.primary),
               const SizedBox(height: 24),
               Text(
                 'Verification Pending',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Your startup registration has been received and is currently under review by our admin team. This usually takes 1-2 business days. We will notify you once your account is approved.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: isDark ? Colors.white60 : Colors.black54,
                   fontSize: 16,
                   height: 1.5,
                 ),
