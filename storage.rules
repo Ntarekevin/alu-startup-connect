@@ -1,0 +1,40 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Avatars ──────────────────────────────────────────────────────────────
+    // Any signed-in user can upload their own avatar.
+    // Anyone signed in can read avatars (so they show in the app).
+    match /avatars/{fileName} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024   // max 5 MB
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // ── Startup proof documents ───────────────────────────────────────────────
+    // Only signed-in users can upload a proof document.
+    // Only admins (or the owner) can read them.
+    match /startup_proofs/{fileName} {
+      allow read:  if request.auth != null
+                   && (request.auth.token.email.matches('.*@aluadmin\\.com')
+                       || fileName.matches(request.auth.uid + '.*'));
+      allow write: if request.auth != null
+                   && request.resource.size < 10 * 1024 * 1024; // max 10 MB
+    }
+
+    // ── CV / Resume uploads ───────────────────────────────────────────────────
+    // A signed-in student can upload their own CV.
+    // Anyone signed in can read CVs (startups need to view applications).
+    match /cvs/{fileName} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024; // max 5 MB
+    }
+
+    // ── Default: deny everything else ────────────────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -22,39 +23,53 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   Future<void> _pickAndUploadAvatar(String uid) async {
     if (_isPickingFile || _isUploading) return;
     setState(() => _isPickingFile = true);
-    
+
     try {
       final result = await FilePicker.pickFiles(
         type: FileType.image,
       );
-      
+
       if (result != null && result.files.isNotEmpty) {
         final path = result.files.single.path;
-        final name = result.files.single.name;
         if (path != null) {
           setState(() {
             _isUploading = true;
             _isPickingFile = false;
           });
 
-          // Upload to Firebase Storage
-          final file = File(path);
-          final ref = FirebaseStorage.instance
-              .ref()
-              .child('avatars/${uid}_${DateTime.now().millisecondsSinceEpoch}_$name');
-          
-          await ref.putFile(file);
-          final downloadUrl = await ref.getDownloadURL();
+          // Compress the image to under 200 KB so it fits in Firestore (free tier)
+          final compressed = await FlutterImageCompress.compressWithFile(
+            path,
+            minWidth: 300,
+            minHeight: 300,
+            quality: 70,
+            format: CompressFormat.jpeg,
+          );
 
-          // Update Firestore
+          if (compressed == null) {
+            throw Exception('Could not compress image. Please try a different picture.');
+          }
+
+          // Safety check: Firestore document limit is 1 MB
+          if (compressed.length > 700 * 1024) {
+            throw Exception('Image is still too large after compression. Please choose a smaller image.');
+          }
+
+          // Convert to base64 data URI and save in Firestore
+          final base64Str = base64Encode(compressed);
+          final dataUri = 'data:image/jpeg;base64,$base64Str';
+
           await FirebaseFirestore.instance
               .collection('users')
               .doc(uid)
-              .update({'avatarUrl': downloadUrl});
+              .update({'avatarUrl': dataUri});
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Profile picture updated successfully! 🎉')),
+              const SnackBar(
+                content: Text('Profile picture updated! 🎉'),
+                backgroundColor: AppColors.primary,
+              ),
             );
           }
         }
@@ -62,7 +77,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error uploading picture: $e')),
+          SnackBar(content: Text('Error: $e')),
         );
       }
     } finally {
@@ -73,6 +88,16 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         });
       }
     }
+  }
+
+  /// Returns the correct ImageProvider depending on whether [url]
+  /// is a base64 data URI (stored in Firestore) or a regular https URL.
+  ImageProvider _resolveImage(String url) {
+    if (url.startsWith('data:image')) {
+      final base64Str = url.split(',').last;
+      return MemoryImage(base64Decode(base64Str));
+    }
+    return NetworkImage(url);
   }
 
   @override
@@ -166,7 +191,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                                       border: Border.all(color: AppColors.primary, width: 3),
                                       image: avatarUrl != null && avatarUrl.isNotEmpty
                                           ? DecorationImage(
-                                              image: NetworkImage(avatarUrl),
+                                              image: _resolveImage(avatarUrl),
                                               fit: BoxFit.cover,
                                             )
                                           : null,

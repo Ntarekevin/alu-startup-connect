@@ -1,14 +1,21 @@
 import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/custom_button.dart';
+
+/// Top-level function required by compute() — runs base64 encoding
+/// in a background isolate so the UI thread stays smooth.
+String _encodeToBase64(Uint8List bytes) => base64Encode(bytes);
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -24,10 +31,12 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   final _nameController = TextEditingController();
   bool _obscure = true;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   String? _loadingMessage;
   String _selectedRole = 'student';
   File? _proofFile;
   String? _proofFileName;
+  final _googleSignIn = GoogleSignIn();
 
   @override
   void initState() {
@@ -45,18 +54,24 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   }
 
   void _signInWithGoogle() async {
-    setState(() => _isLoading = true);
+    if (_isGoogleLoading) return;
+    setState(() {
+      _isGoogleLoading = true;
+      _loadingMessage = 'Opening Google...';
+    });
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        setState(() => _isLoading = false);
+        setState(() => _isGoogleLoading = false);
         return;
       }
+      setState(() => _loadingMessage = 'Authenticating...');
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
+      setState(() => _loadingMessage = 'Signing in...');
       await FirebaseAuth.instance.signInWithCredential(credential);
       
       final user = FirebaseAuth.instance.currentUser;
@@ -66,6 +81,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           return;
         }
 
+        setState(() => _loadingMessage = 'Loading profile...');
         final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
         if (doc.exists) {
           final data = doc.data();
@@ -80,15 +96,21 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     } on FirebaseAuthException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Authentication failed')));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign-in failed. Please try again.')));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() {
+        _isGoogleLoading = false;
+        _loadingMessage = null;
+      });
     }
   }
 
   void _signInWithEmail() async {
     if (_emailController.text.trim().isEmpty || _passwordController.text.isEmpty) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _loadingMessage = 'Authenticating...';
+    });
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
@@ -102,6 +124,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           return;
         }
 
+        setState(() => _loadingMessage = 'Loading profile...');
         final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
         if (doc.exists) {
           final data = doc.data();
@@ -116,7 +139,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     } on FirebaseAuthException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Authentication failed')));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() {
+        _isLoading = false;
+        _loadingMessage = null;
+      });
     }
   }
 
@@ -182,12 +208,47 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         password: password,
       );
       
-      String? proofUrl;
+      String? proofData;
+      String? proofFileName;
+      String? proofType;
       if (_selectedRole == 'startup' && _proofFile != null) {
-        setState(() => _loadingMessage = 'Uploading proof...');
-        final ref = FirebaseStorage.instance.ref().child('startup_proofs/${userCred.user!.uid}_$_proofFileName');
-        await ref.putFile(_proofFile!);
-        proofUrl = await ref.getDownloadURL();
+        final ext = (_proofFileName ?? '').split('.').last.toLowerCase();
+        final isPdf = ext == 'pdf';
+        proofType = isPdf ? 'application/pdf' : 'image/$ext';
+        proofFileName = _proofFileName;
+
+        Uint8List bytes;
+        if (isPdf) {
+          // PDFs: just read — no compression possible
+          setState(() => _loadingMessage = 'Reading document...');
+          bytes = await _proofFile!.readAsBytes();
+        } else {
+          // Images: compress first so encoding + Firestore write is fast
+          setState(() => _loadingMessage = 'Compressing image...');
+          final compressed = await FlutterImageCompress.compressWithFile(
+            _proofFile!.path,
+            minWidth: 800,
+            minHeight: 800,
+            quality: 72,
+            format: CompressFormat.jpeg,
+          );
+          bytes = compressed ?? await _proofFile!.readAsBytes();
+        }
+
+        // Safety check: Firestore document limit is 1 MB
+        if (bytes.length > 700 * 1024) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Proof document is too large (max ~700 KB). Please use a compressed image or a smaller PDF.')),
+            );
+            setState(() { _isLoading = false; _loadingMessage = null; });
+          }
+          return;
+        }
+
+        // Encode in a background isolate so the UI stays responsive
+        setState(() => _loadingMessage = 'Encoding document...');
+        proofData = await compute(_encodeToBase64, bytes);
       }
       
       setState(() => _loadingMessage = 'Finalizing profile...');
@@ -196,7 +257,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         'email': email,
         'role': _selectedRole,
         'status': _selectedRole == 'startup' ? 'pending' : 'active',
-        if (proofUrl != null) 'proofUrl': proofUrl,
+        if (proofData != null) 'proofData': proofData,
+        if (proofFileName != null) 'proofFileName': proofFileName,
+        if (proofType != null) 'proofType': proofType,
         'createdAt': FieldValue.serverTimestamp(),
       });
       
@@ -340,11 +403,41 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           ),
         ),
         const SizedBox(height: 24),
-        GlowButton(
-          label: _isLoading ? 'Signing in...' : 'Sign In',
-          onPressed: _isLoading ? () {} : _signInWithEmail,
-          width: double.infinity,
-        ),
+        if (_isLoading)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(
+                  width: 20, height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.primary),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    _loadingMessage ?? 'Processing...',
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          GlowButton(
+            label: 'Sign In',
+            onPressed: _signInWithEmail,
+            width: double.infinity,
+          ),
         const SizedBox(height: 20),
         Row(
           children: [
@@ -357,13 +450,41 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           ],
         ),
         const SizedBox(height: 20),
-        OutlinedButton.icon(
-          onPressed: _isLoading ? null : _signInWithGoogle,
-          icon: const Icon(Icons.g_mobiledata, size: 28),
-          label: const Text('Continue with Google'),
+        OutlinedButton(
+          onPressed: (_isLoading || _isGoogleLoading) ? null : _signInWithGoogle,
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(double.infinity, 50),
+            side: BorderSide(
+              color: _isGoogleLoading ? AppColors.primary : (isDark ? Colors.white24 : Colors.black26),
+            ),
           ),
+          child: _isGoogleLoading
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      _loadingMessage ?? 'Connecting...',
+                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                )
+              : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.g_mobiledata, size: 28),
+                    SizedBox(width: 8),
+                    Text('Continue with Google'),
+                  ],
+                ),
         ),
       ],
     );
@@ -457,11 +578,41 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           ),
         ],
         const SizedBox(height: 16),
-        GlowButton(
-          label: _isLoading ? (_loadingMessage ?? 'Creating...') : 'Create Account',
-          onPressed: _isLoading ? () {} : _signUpWithEmail,
-          width: double.infinity,
-        ),
+        if (_isLoading)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(
+                  width: 20, height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.primary),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    _loadingMessage ?? 'Processing...',
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          GlowButton(
+            label: 'Create Account',
+            onPressed: _signUpWithEmail,
+            width: double.infinity,
+          ),
       ],
       ),
     );
