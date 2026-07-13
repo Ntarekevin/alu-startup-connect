@@ -1,8 +1,5 @@
 import 'dart:io';
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
@@ -10,12 +7,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/custom_button.dart';
-
-/// Top-level function required by compute() — runs base64 encoding
-/// in a background isolate so the UI thread stays smooth.
-String _encodeToBase64(Uint8List bytes) => base64Encode(bytes);
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -138,6 +132,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       if (mounted) context.go('/main');
     } on FirebaseAuthException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Authentication failed')));
+    } on FirebaseException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Database query failed')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('An unexpected error occurred: $e')));
     } finally {
       if (mounted) setState(() {
         _isLoading = false;
@@ -208,60 +206,39 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         password: password,
       );
       
-      String? proofData;
       String? proofFileName;
       String? proofType;
+      String? proofLocalPath;
       if (_selectedRole == 'startup' && _proofFile != null) {
         final ext = (_proofFileName ?? '').split('.').last.toLowerCase();
         final isPdf = ext == 'pdf';
         proofType = isPdf ? 'application/pdf' : 'image/$ext';
         proofFileName = _proofFileName;
+        proofLocalPath = 'proof_${userCred.user!.uid}.$ext';
 
-        Uint8List bytes;
-        if (isPdf) {
-          // PDFs: just read — no compression possible
-          setState(() => _loadingMessage = 'Reading document...');
-          bytes = await _proofFile!.readAsBytes();
-        } else {
-          // Images: compress first so encoding + Firestore write is fast
-          setState(() => _loadingMessage = 'Compressing image...');
-          final compressed = await FlutterImageCompress.compressWithFile(
-            _proofFile!.path,
-            minWidth: 800,
-            minHeight: 800,
-            quality: 72,
-            format: CompressFormat.jpeg,
-          );
-          bytes = compressed ?? await _proofFile!.readAsBytes();
-        }
-
-        // Safety check: Firestore document limit is 1 MB
-        if (bytes.length > 700 * 1024) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Proof document is too large (max ~700 KB). Please use a compressed image or a smaller PDF.')),
-            );
-            setState(() { _isLoading = false; _loadingMessage = null; });
-          }
-          return;
-        }
-
-        // Encode in a background isolate so the UI stays responsive
-        setState(() => _loadingMessage = 'Encoding document...');
-        proofData = await compute(_encodeToBase64, bytes);
+        setState(() => _loadingMessage = 'Saving document locally...');
+        final appDir = await getApplicationDocumentsDirectory();
+        final localFile = File('${appDir.path}/$proofLocalPath');
+        await _proofFile!.copy(localFile.path);
       }
       
       setState(() => _loadingMessage = 'Finalizing profile...');
-      await FirebaseFirestore.instance.collection('users').doc(userCred.user!.uid).set({
-        'name': name,
-        'email': email,
-        'role': _selectedRole,
-        'status': _selectedRole == 'startup' ? 'pending' : 'active',
-        if (proofData != null) 'proofData': proofData,
-        if (proofFileName != null) 'proofFileName': proofFileName,
-        if (proofType != null) 'proofType': proofType,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(userCred.user!.uid).set({
+          'name': name,
+          'email': email,
+          'role': _selectedRole,
+          'status': _selectedRole == 'startup' ? 'pending' : 'active',
+          if (proofLocalPath != null) 'proofLocalPath': proofLocalPath,
+          if (proofFileName != null) 'proofFileName': proofFileName,
+          if (proofType != null) 'proofType': proofType,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        // If Firestore write fails, clean up the Auth user so the email is not locked
+        await userCred.user?.delete();
+        rethrow;
+      }
       
       if (mounted) {
         if (_selectedRole == 'startup') {
@@ -272,6 +249,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Signup failed')));
+    } on FirebaseException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Database write failed during signup')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('An unexpected error occurred: $e')));
     } finally {
       if (mounted) {
         setState(() {

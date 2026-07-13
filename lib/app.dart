@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'core/theme/app_theme.dart';
-import 'features/onboarding/splash_screen.dart';
-import 'features/onboarding/onboarding_screen.dart';
-import 'features/onboarding/auth_screen.dart';
-import 'features/home/main_shell.dart';
-import 'features/profile/company_profile_screen.dart';
-import 'features/notifications/notifications_screen.dart';
-import 'features/onboarding/startup_pending_screen.dart';
-import 'features/admin/admin_dashboard.dart';
+import 'package:alu_startup_connect/core/theme/app_theme.dart';
+import 'package:alu_startup_connect/features/onboarding/splash_screen.dart';
+import 'package:alu_startup_connect/features/onboarding/onboarding_screen.dart';
+import 'package:alu_startup_connect/features/onboarding/auth_screen.dart';
+import 'package:alu_startup_connect/features/home/main_shell.dart';
+import 'package:alu_startup_connect/features/profile/company_profile_screen.dart';
+import 'package:alu_startup_connect/features/notifications/notifications_screen.dart';
+import 'package:alu_startup_connect/features/onboarding/startup_pending_screen.dart';
+import 'package:alu_startup_connect/features/admin/admin_dashboard.dart';
 
 final _router = GoRouter(
   initialLocation: '/',
@@ -41,7 +41,7 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/pending',
-      builder: (_, __) => const StartupPendingScreen(),
+      builder: (_, __) => const StartupDashboardScreen(),
     ),
     GoRoute(
       path: '/admin',

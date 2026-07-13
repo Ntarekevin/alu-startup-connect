@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/custom_button.dart';
 
@@ -187,12 +189,129 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       // Proof document section
                       Builder(builder: (context) {
                         final proofData = data['proofData'] as String?;
+                        final proofLocalPath = data['proofLocalPath'] as String?;
                         final proofFileName = data['proofFileName'] as String? ?? 'Proof Document';
                         final proofType = data['proofType'] as String? ?? '';
                         // Backward compat: old signups used proofUrl
                         final proofUrl = data['proofUrl'] as String?;
 
-                        if (proofData != null) {
+                        if (proofLocalPath != null) {
+                          final isImage = proofType.startsWith('image/');
+                          return FutureBuilder<Directory>(
+                            future: getApplicationDocumentsDirectory(),
+                            builder: (context, dirSnap) {
+                              if (!dirSnap.hasData) {
+                                return const SizedBox(
+                                  height: 40,
+                                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                );
+                              }
+                              final absolutePath = '${dirSnap.data!.path}/$proofLocalPath';
+                              final file = File(absolutePath);
+                              if (!file.existsSync()) {
+                                return Row(
+                                  children: [
+                                    const Icon(Icons.error_outline, color: Colors.redAccent, size: 16),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Local file not found: $proofFileName',
+                                        style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }
+
+                              if (isImage) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.attach_file, color: AppColors.primary, size: 16),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            proofFileName,
+                                            style: const TextStyle(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.file(
+                                        file,
+                                        height: 180,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              } else {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.attach_file, color: AppColors.primary, size: 16),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            proofFileName,
+                                            style: const TextStyle(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withOpacity(0.08),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.picture_as_pdf, color: AppColors.primary, size: 20),
+                                          const SizedBox(width: 8),
+                                          const Text(
+                                            'PDF Document',
+                                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13),
+                                          ),
+                                          const Spacer(),
+                                          GestureDetector(
+                                            onTap: () {
+                                              launchUrl(Uri.parse('file://$absolutePath'), mode: LaunchMode.externalApplication);
+                                            },
+                                            child: const Text(
+                                              'Open',
+                                              style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }
+                            },
+                          );
+                        } else if (proofData != null) {
                           final isImage = proofType.startsWith('image/');
                           final bytes = base64Decode(proofData);
                           return Column(

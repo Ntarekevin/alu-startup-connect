@@ -23,7 +23,8 @@ class HomeScreen extends StatelessWidget {
         stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
         builder: (context, userSnap) {
           final userData = userSnap.data?.data() as Map<String, dynamic>?;
-          final userName = userData?['name'] ?? 'there';
+          final firebaseName = FirebaseAuth.instance.currentUser?.displayName;
+          final userName = userData?['name'] ?? firebaseName ?? 'Student';
 
           return Stack(
             children: [
@@ -50,7 +51,7 @@ class HomeScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Hello, ${userName.split(' ').first} ',
+                                  'Hello, $userName',
                                   style: const TextStyle(
                                     fontSize: 28,
                                     fontWeight: FontWeight.w800,
@@ -129,13 +130,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     
-                    // Recommended Card overlapping the curve
-                    const SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(24, 32, 24, 0),
-                        child: _RecommendedCard(),
-                      ),
-                    ),
+
 
                     // Categories
                     const SliverToBoxAdapter(
@@ -217,102 +212,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _RecommendedCard extends StatelessWidget {
-  const _RecommendedCard();
 
-  @override
-  Widget build(BuildContext context) {
-    final card = Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6C5CE7), Color(0xFF8E7DF9)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withOpacity(0.4),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          )
-        ]
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: const Text(
-                  'Recommended',
-                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
-                ),
-              ),
-              const Icon(Icons.bookmark_border_rounded, color: Colors.white),
-            ],
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Product Design Intern',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Figma • Remote',
-            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              const TagChip(label: 'Design', color: Colors.white),
-              const SizedBox(width: 8),
-              const TagChip(label: 'Part-time', color: Colors.white),
-              const Spacer(),
-              Text(
-                '2h ago',
-                style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12, fontWeight: FontWeight.w500),
-              )
-            ],
-          )
-        ],
-      ),
-    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
-
-    return GestureDetector(
-      onTap: () {
-        final dummyOpp = OpportunityModel(
-          id: 'dummy_recommended',
-          companyId: 'dummy_company',
-          companyName: 'Tech Startup',
-          companyLogo: '',
-          title: 'Product Design Intern',
-          type: 'Part-time',
-          location: 'Remote',
-          isRemote: true,
-          duration: '3 months',
-          description: 'Join our design team to build the future...',
-          category: 'Design',
-          postedAt: DateTime.now().subtract(const Duration(hours: 2)),
-          deadline: DateTime.now().add(const Duration(days: 14)),
-        );
-        Navigator.push(context, MaterialPageRoute(builder: (_) => OpportunityDetailScreen(opportunity: dummyOpp)));
-      },
-      child: card,
-    );
-  }
-}
 
 class _CategoryRow extends StatelessWidget {
   const _CategoryRow();

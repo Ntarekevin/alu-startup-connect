@@ -24,7 +24,6 @@ class StartupApplicantsScreen extends StatelessWidget {
         stream: FirebaseFirestore.instance
             .collection('applications')
             .where('companyId', isEqualTo: uid)
-            .orderBy('appliedAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -33,7 +32,19 @@ class StartupApplicantsScreen extends StatelessWidget {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
           }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+
+          final docs = List<QueryDocumentSnapshot>.from(snapshot.data?.docs ?? []);
+          // Sort in-memory to avoid needing a Firestore composite index
+          docs.sort((a, b) {
+            final aTime = (a.data() as Map<String, dynamic>)['appliedAt'] as Timestamp?;
+            final bTime = (b.data() as Map<String, dynamic>)['appliedAt'] as Timestamp?;
+            if (aTime == null && bTime == null) return 0;
+            if (aTime == null) return 1;
+            if (bTime == null) return -1;
+            return bTime.compareTo(aTime);
+          });
+
+          if (docs.isEmpty) {
             return const Center(
               child: Text(
                 'No applicants yet',
@@ -41,8 +52,6 @@ class StartupApplicantsScreen extends StatelessWidget {
               ),
             );
           }
-
-          final docs = snapshot.data!.docs;
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: docs.length,

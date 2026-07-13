@@ -68,7 +68,6 @@ class MessagesScreen extends StatelessWidget {
                 stream: FirebaseFirestore.instance
                     .collection('conversations')
                     .where('participants', arrayContains: FirebaseAuth.instance.currentUser?.uid)
-                    .orderBy('lastMessageTime', descending: true)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -78,7 +77,17 @@ class MessagesScreen extends StatelessWidget {
                     return Center(child: Text('Error: ${snapshot.error}'));
                   }
 
-                  final docs = snapshot.data?.docs ?? [];
+                  final docs = List<QueryDocumentSnapshot>.from(snapshot.data?.docs ?? []);
+                  // Sort in-memory by lastMessageTime descending to avoid requiring a Firestore composite index
+                  docs.sort((a, b) {
+                    final aTime = (a.data() as Map<String, dynamic>)['lastMessageTime'] as Timestamp?;
+                    final bTime = (b.data() as Map<String, dynamic>)['lastMessageTime'] as Timestamp?;
+                    if (aTime == null && bTime == null) return 0;
+                    if (aTime == null) return 1;
+                    if (bTime == null) return -1;
+                    return bTime.compareTo(aTime);
+                  });
+
                   if (docs.isEmpty) {
                     return const Center(child: Text('No conversations yet', style: TextStyle(color: Colors.grey)));
                   }

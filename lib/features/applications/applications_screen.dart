@@ -107,7 +107,6 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> with SingleTick
                 stream: FirebaseFirestore.instance
                     .collection('applications')
                     .where('studentId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-                    .orderBy('appliedAt', descending: true)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -117,7 +116,17 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> with SingleTick
                     return Center(child: Text('Error: ${snapshot.error}'));
                   }
 
-                  final docs = snapshot.data?.docs ?? [];
+                  final docs = List<QueryDocumentSnapshot>.from(snapshot.data?.docs ?? []);
+                  // Sort in-memory to avoid needing a Firestore composite index
+                  docs.sort((a, b) {
+                    final aTime = (a.data() as Map<String, dynamic>)['appliedAt'] as Timestamp?;
+                    final bTime = (b.data() as Map<String, dynamic>)['appliedAt'] as Timestamp?;
+                    if (aTime == null && bTime == null) return 0;
+                    if (aTime == null) return 1;
+                    if (bTime == null) return -1;
+                    return bTime.compareTo(aTime);
+                  });
+
                   final allApps = docs.map((doc) {
                     final data = doc.data() as Map<String, dynamic>;
                     return ApplicationModel(
