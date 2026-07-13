@@ -67,3 +67,6 @@ Once the app is running, you can test the three different flows:
   This usually happens if you are using Wireless Debugging and your Wi-Fi drops. Switching to a USB cable solves this.
 - **Upload fails/hangs on Startup signup:**
   Ensure the proof document is less than 700KB. The app automatically compresses images, but large raw PDFs might exceed Firestore's 1MB document limit.
+
+My Link to the demo Video
+[Demo](https://youtu.be/fjbJ8VRnomA)
