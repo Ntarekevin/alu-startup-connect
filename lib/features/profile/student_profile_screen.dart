@@ -115,8 +115,17 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           }
 
           final data = userSnap.data?.data() as Map<String, dynamic>?;
-          final name = data?['name'] ?? 'Student';
-          final email = data?['email'] ?? '';
+          final name = data?['name'] ??
+              FirebaseAuth.instance.currentUser?.displayName ??
+              (FirebaseAuth.instance.currentUser?.email != null
+                  ? FirebaseAuth.instance.currentUser!.email!
+                      .split('@')
+                      .first
+                      .split('.')
+                      .map((s) => s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : '')
+                      .join(' ')
+                  : 'Student');
+          final email = data?['email'] ?? FirebaseAuth.instance.currentUser?.email ?? '';
           final bio = data?['bio'] as String?;
           final major = data?['major'] as String?;
           final university = data?['university'] as String?;

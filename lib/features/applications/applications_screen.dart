@@ -149,7 +149,8 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> with SingleTick
                           : allApps
                               .where((a) =>
                                   a.status.toLowerCase() == status.toLowerCase() ||
-                                  (status == 'Reviewing' && (a.status == 'applied' || a.status == 'pending' || a.status == 'reviewing')))
+                                  (status == 'Reviewing' && (a.status == 'applied' || a.status == 'pending' || a.status == 'reviewing')) ||
+                                  (status == 'Offer' && (a.status == 'offer' || a.status == 'accepted')))
                               .toList();
 
                       return apps.isEmpty
@@ -190,7 +191,8 @@ class _ExpandableApplicationCardState extends State<_ExpandableApplicationCard> 
       case 'pending':
       case 'reviewing': return const Color(0xFF5B8DEF); // Blue
       case 'interview': return const Color(0xFF6C5CE7); // Purple
-      case 'offer': return const Color(0xFF22D3A5); // Green
+      case 'offer':
+      case 'accepted': return const Color(0xFF22D3A5); // Green
       case 'rejected': return const Color(0xFFFF4B63); // Red
       default: return Colors.grey;
     }
@@ -203,6 +205,7 @@ class _ExpandableApplicationCardState extends State<_ExpandableApplicationCard> 
       case 'reviewing': return 'Under Review';
       case 'interview': return 'Interviewing';
       case 'offer': return 'Offer Received';
+      case 'accepted': return 'Accepted';
       case 'rejected': return 'Not Selected';
       default: return 'Under Review';
     }
@@ -215,6 +218,7 @@ class _ExpandableApplicationCardState extends State<_ExpandableApplicationCard> 
       case 'reviewing': return Icons.remove_red_eye_rounded;
       case 'interview': return Icons.videocam_rounded;
       case 'offer': return Icons.star_rounded;
+      case 'accepted': return Icons.check_circle_rounded;
       case 'rejected': return Icons.close_rounded;
       default: return Icons.remove_red_eye_rounded;
     }

@@ -113,7 +113,7 @@ class StartupApplicantsScreen extends StatelessWidget {
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          if (status == 'pending') ...[
+                           if (status == 'applied' || status == 'pending') ...[
                             Expanded(
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),

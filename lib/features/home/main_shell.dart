@@ -64,6 +64,7 @@ class _StudentShellState extends State<_StudentShell> {
     HomeScreen(),
     ExploreScreen(),
     ApplicationsScreen(),
+    MessagesScreen(),
     StudentProfileScreen(),
   ];
 
